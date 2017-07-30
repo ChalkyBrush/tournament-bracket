@@ -1,0 +1,116 @@
+<table class="table table-striped">
+	<tr>
+		Heat #<%=heat.index%>
+	</tr>
+	<tr>
+		<td style="width:60%"></td>
+		<td style="width:40%">Score</td>
+	</tr>
+	<%players = Player.where(heat_id: heat.id)%>
+	<%emptySlots = heat.player_count - players.count%>
+	<%scoredPlayers = 0%>
+	<%heat.player_count.times do |index|%>
+		<tr>
+			<%if index < players.count%>
+				<%x = players[index]%>
+				<td><%=x.gamertag%></td>
+				<%if x.score == nil%>
+				<td> <div class="input-group"><span class="input-group-addon" id="basic-addon1">Player Score:</span><input type="number" class="form-control" placeholder="Score" aria-describedby="basic-addon1" id="score-input<%=heat.id%>">     <span class="input-group-btn">
+        <button class="btn btn-default submit-score-btn<%=heat.id%>" type="button" data-player-id="<%=x.id%>" data-heat-id="<%=heat.id%>" data-competition-id="<%=competition.id%>" data-round-number="<%=heat.round_number%>">Submit</button>
+      </span></div>
+				</td>
+				<%else%>
+					<td><%=x.score%></td>
+					<%scoredPlayers = scoredPlayers + 1%>
+				<%end%>
+			<%else%>
+
+				<td> 
+					<% if heat.round_number == 1%>
+					<div class="input-group"><span class="input-group-addon" id="basic-addon1">Assign Player:</span><input type="text" class="form-control" placeholder="Player Name" aria-describedby="basic-addon1" id="player-input<%=heat.id%>">     <span class="input-group-btn">
+	        		<button class="btn btn-default submit-player-btn<%=heat.id%>" type="button" data-heat-id="<%=heat.id%>" data-competition-id="<%=competition.id%>">Submit</button>
+	      			</span></div>
+	      			<%else%>
+	      				Awaiting Results from Round #<%=heat.round_number-1%>
+	      			<%end%>
+				</td>
+				<td></td>
+			<%end%>
+		</tr>
+	<%end%>
+
+</table>
+<div id="heat-data<%=heat.id%>" data-players-scored="<%=scoredPlayers%>" data-total-players="<%=heat.player_count%>">
+</div>
+<script>
+$(".submit-player-btn<%=heat.id%>").click(function(){
+	var inputBox = $(this).parent().prev()
+	var playerName = inputBox.val()
+	var heatID = $(this).data('heat-id')
+	var competitionID = $(this).data('competition-id')
+    $.ajax({
+        url: '/competitions/'+competitionID+'/addPlayer',
+        data: {heatID: heatID, playerName: playerName},
+        cache: false,
+        method: 'POST',
+        success: function(html){
+          $("#heat"+heatID).empty();
+          $("#heat"+heatID).append(html);
+        }
+    });
+
+});
+
+function playerScoreSubmitted(heatID, roundNumber, competitionID){
+	var roundContainer = $('#round-container'+roundNumber)
+	var playersScored = $('#heat-data'+heatID).data('players-scored')
+	var totalPlayers = $('#heat-data'+heatID).data('total-players')
+	console.log(playersScored)
+	console.log(totalPlayers)
+	if (playersScored >= totalPlayers){
+		if (roundContainer.length == 0){
+		    $.ajax({
+		        url: '/competitions/'+competitionID+'/getRound',
+		        data: {heatID: heatID, round: roundNumber},
+		        cache: false,
+		        method: 'GET',
+		        success: function(html){
+		          $(".starter-template").append(html);
+		        }
+		    });		
+		}else{
+		    $.ajax({
+		        url: '/competitions/'+competitionID+'/getRound',
+		        data: {heatID: heatID, round: roundNumber},
+		        cache: false,
+		        method: 'GET',
+		        success: function(html){
+		          roundContainer.empty();
+		          roundContainer.append(html);
+		        }
+		    });			
+		}
+	}
+}
+
+$(".submit-score-btn<%=heat.id%>").click(function(){
+	var inputBox = $(this).parent().prev()
+	var score = inputBox.val()
+	var heatID = $(this).data('heat-id')
+	var competitionID = $(this).data('competition-id')
+	var playerID = $(this).data('player-id')
+	var roundNumber = $(this).data('round-number')
+    $.ajax({
+        url: '/competitions/'+competitionID+'/setScore',
+        data: {heatID: heatID, score: score, playerID: playerID},
+        cache: false,
+        method: 'POST',
+        success: function(html){
+          $("#heat"+heatID).empty();
+          $("#heat"+heatID).append(html);
+          playerScoreSubmitted(heatID, roundNumber+1, competitionID)
+        }
+    });
+
+});
+</script>

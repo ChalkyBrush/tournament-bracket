@@ -1,0 +1,17 @@
+<div id="round-container<%=i+1%>">
+	<h2>Round #<%=i+1%></h2>
+	<%heats = Heat.where(competition_id: competition.id, round_number: i+1)%>
+	<%if heats.count > 0%>
+		<%heats.each do |heat|%>
+			<div id="heat<%=heat.id%>">
+				<%=render :partial => "/heats/heat_table", :locals => { :heat => heat, :competition => competition}%>
+			</div>
+		<%end%>
+	<%else%>
+		<%winners = Player.where(competition_id: competition.id, heat_id: -1)%>
+		<%winners.each do |winner|%>
+			<h2>Winner: <%=winner.gamertag%></h2>
+		<%end%>
+	<%end%>
+	<hr>
+</div>

@@ -1,0 +1,11 @@
+<div class="container">
+	<div class="starter-template">
+		<h1><%=@competition.name%></h1>
+		<hr>
+		<%@competition.current_round.times do |i|%>
+			<%=render :partial => "/competition/round", :locals => {:competition => @competition, :i => i}%>
+
+		<%end%>
+	</div>
+</div>
+
